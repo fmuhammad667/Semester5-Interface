@@ -1,0 +1,124 @@
+/*
+Kelompok 5 - (Sistem Parkir Otomatis)
+  * Alfan Almarogy
+  * Dede Ridwan
+  * Fadhil Muhammad
+*/
+
+
+/* Library */
+#include <LiquidCrystal_I2C.h>
+#include <Servo.h>
+
+
+/* Deklarasi Variable & Object */ 
+// Alamat I2C untuk LCD
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+// Object dari Class Servo
+Servo motorServo;
+
+// Variable Lampu
+const int pinMerah = 4;
+const int pinHijau = 5;
+
+// Variable Sensor Ultrasonik
+const int echoPin = 12; 
+const int trigPin = 13;
+const int servoPin = 3;
+
+// Variable Sensor Buzzer
+const int buzzer = 8;
+
+// Variable iterasi dari Nilai mobil
+int iterasi = 0;
+int parkirTersedia = 5;
+
+
+void setup() {
+
+  /* bagian LCD */
+  lcd.init();
+  lcd.begin(16, 2); 
+  lcd.clear();
+  lcd.backlight();  
+  lcd.setCursor(0,0);
+  lcd.print("PARKIR YANG");
+  lcd.setCursor(0,1);
+  lcd.print("TERSEDIA : ");
+  lcd.setCursor(11, 1);
+  lcd.print(parkirTersedia);
+
+  /* bagian Ultrasonik */
+  pinMode(echoPin, INPUT);
+  pinMode(trigPin, OUTPUT);
+
+  /* lampu LED */
+  pinMode(pinMerah, OUTPUT);
+  pinMode(pinHijau, OUTPUT);
+
+  /* bagian Servo */
+  motorServo.attach(servoPin);
+  motorServo.write(0);
+
+  /* bagian suara */
+  pinMode(buzzer, OUTPUT);
+
+  /* bagian Serial begin */
+  Serial.begin(9600);
+
+}
+
+void loop() {
+
+  /* pemubatan variable */
+  double durasi, jarak;
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  durasi = pulseIn(echoPin, HIGH);
+  jarak = (durasi / 2) / 29.1;
+
+  digitalWrite(pinHijau, HIGH);
+
+  /* pengkondisian */
+  if(jarak > 0 && jarak < 3) {
+  if (iterasi < 5)  {
+    tone(buzzer, 500, 500);
+    iterasi++;
+    parkirTersedia--;
+    updateLCD();
+    openGate();
+    delay(3000); // Delay untuk menghindari multiple detection
+    }
+  }
+
+  if (iterasi >= 5) {
+    digitalWrite(pinHijau, LOW); 
+    digitalWrite(pinMerah, HIGH); 
+  } else {
+    digitalWrite(pinMerah, LOW);
+  }
+}
+
+/* fungsi updateLCD */
+void updateLCD() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("PARKIR YANG");
+  lcd.setCursor(0,1);
+  lcd.print("TERSEDIA : ");
+  lcd.setCursor(11, 1);
+  lcd.print(parkirTersedia);
+}
+
+/* fungsi openGate() */
+void openGate() {
+    motorServo.write(90);
+    delay(4000); // 4 detik
+    motorServo.write(0);
+}
